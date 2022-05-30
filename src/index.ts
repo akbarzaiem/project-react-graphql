@@ -1,8 +1,9 @@
 import { Sequelize } from 'sequelize'
-import { initModels, product, productCreationAttributes } from "./models/init-models";
+import { initModels, product, order, productCreationAttributes, orderCreationAttributes } from "./models/init-models";
 import * as dotenv from 'dotenv'
 import { ApolloServer, gql } from 'apollo-server';
 import { readFileSync } from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 const typeDefs = readFileSync("./src/product-order.graphql").toString('utf-8')
 
@@ -21,7 +22,8 @@ initModels(sequelize)
 
 const resolvers = {
     Query: {
-        products: async () => await product.findAll()
+        products: async () => await product.findAll(),
+        orders: async () => await order.findAll()
 
     },
     Mutation: {
@@ -54,6 +56,38 @@ const resolvers = {
         DeleteProduct: (_parent: any, args: any) => {
             return product.destroy({ where: { id: args.id } });
         },
+
+        //ORDER
+        GetDetailOrder: async (_parent: any, args: any) => {
+            return await order.findByPk(args.id)
+        }
+        ,
+        CreateOrder: async (_parent: any, args: any) => {
+            const now = new Date();
+            const generator = uuidv4();
+
+            const newOrder: orderCreationAttributes = {
+                transcode: generator,
+                created: now.toDateString(),
+            };
+            return await order.create(newOrder);
+        },
+        UpdateOrder: async (_parent: any, args: any) => {
+            const generator = uuidv4();
+            const updOrder = {
+                transcode: generator,
+            };
+            await order.update(updOrder, { where: { id: args.id } });
+            return await order.findByPk(args.id);
+        },
+
+        DeleteOrder: (_parent: any, args: any) => {
+            order.destroy({ where: { id: args.id } });
+            return order.findByPk(args.id);
+        },
+
+        //ORDER
+
     }
 };
 
